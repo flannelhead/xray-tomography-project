@@ -9,9 +9,11 @@ olefile==0.44
 packaging==16.8
 Pillow==4.0.0
 pyparsing==2.1.10
+PyQt5==5.8
 python-dateutil==2.6.0
 pytz==2016.10
 scikit-image==0.12.3
 scipy==0.18.1
+sip==4.19.1
 six==1.10.0
 toolz==0.8.2
