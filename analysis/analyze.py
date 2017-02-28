@@ -1,14 +1,26 @@
 from os import path
 
-from skimage import io
-from skimage.viewer import ImageViewer
+import numpy as np
 
-SLICE_DIR = 'slices'
+from skimage import io, util, transform
+from skimage.viewer import CollectionViewer, ImageViewer
 
-io.use_plugin('pil')
 
-img1 = io.imread(path.join(SLICE_DIR, 'testikuutio_rec0642.TIF'))
+SLICE_DIR = 'slices_processed'
+SLICE_PATTERN = '*.TIF'
+SLICE_BOTTOM = 222
+SLICE_TOP = 936
 
-viewer = ImageViewer(img1)
+
+def load_uint8(f, **kwargs):
+    return util.img_as_ubyte(io.imread(f), force_copy=True)
+
+
+slice_collection = io.ImageCollection(path.join(SLICE_DIR, SLICE_PATTERN),
+                                      load_func=load_uint8)
+
+vol_img = slice_collection.concatenate()[SLICE_BOTTOM:SLICE_TOP, :, :]
+
+viewer = CollectionViewer(vol_img)
 viewer.show()
 

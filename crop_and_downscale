@@ -1,0 +1,3 @@
+#!/bin/sh
+
+mogrify -path slices_processed -crop 1230x1230+180+180 -resize 512x512 slices/*.TIF
