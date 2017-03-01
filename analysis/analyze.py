@@ -1,14 +1,16 @@
 from os import path
 
 import numpy as np
+from scipy import ndimage as ndi
 
-from skimage import io, util, filters, transform, morphology
+from skimage import color, io, util, filters, transform, morphology, measure, segmentation, draw
 from skimage.viewer import CollectionViewer, ImageViewer
 
 
 SLICE_DIR = 'slices'
 SLICE_PATTERN = '*.tif'
 CLOSING_RADIUS = 2
+GAUSS_SIGMA = 3
 
 def load_uint8(f, **kwargs):
     return util.img_as_ubyte(io.imread(f), force_copy=True)
@@ -18,14 +20,27 @@ slice_collection = io.ImageCollection(path.join(SLICE_DIR, SLICE_PATTERN),
                                       load_func=load_uint8)
 
 vol_img = slice_collection.concatenate()
+img_blurred = util.img_as_ubyte(filters.gaussian(vol_img, sigma=GAUSS_SIGMA))
 
-otsu_threshold = filters.threshold_otsu(vol_img)
-img_binary = vol_img >= otsu_threshold
+otsu_threshold = filters.threshold_otsu(img_blurred)
+img_binary = img_blurred >= otsu_threshold
 img_binary = morphology.binary_closing(img_binary,
                                        selem=morphology.ball(CLOSING_RADIUS))
 
+nslices, _, _ = img_binary.shape
+all_contours = np.empty_like(img_binary).astype(np.bool)
+for z in range(nslices):
+    contours = measure.find_contours(img_binary[z, :, :], level=0)
+    for contour in contours:
+        rr, cc = draw.polygon_perimeter(contour[:, 0], contour[:, 1])
+        all_contours[z, rr, cc] = 1
+    all_contours[z, :, :] = ndi.binary_fill_holes(all_contours[z, :, :])
+
 img_masked = vol_img & util.img_as_ubyte(img_binary)
 
-viewer = CollectionViewer(img_masked)
+img_rgb = color.gray2rgb(vol_img)
+img_rgb[:, :, :, 0] = np.maximum(img_rgb[:, :, :, 0], util.img_as_ubyte(img_binary))
+
+viewer = CollectionViewer(all_contours)
 viewer.show()
 
