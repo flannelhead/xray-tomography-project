@@ -34,11 +34,12 @@ img_binary = vol_img >= otsu_threshold
 nslices, _, _ = vol_img.shape
 all_contours = np.empty_like(vol_img, dtype=np.bool)
 for z in range(nslices):
-    edges = feature.canny(
-        img_binary[z, :, :], sigma=CANNY_SIGMA,
-        low_threshold=CANNY_LOW, high_threshold=CANNY_HIGH
-    )
+    # edges = feature.canny(
+    #     img_binary[z, :, :], sigma=CANNY_SIGMA,
+    #     low_threshold=CANNY_LOW, high_threshold=CANNY_HIGH
+    # )
     # edges = morphology.binary_dilation(edges, selem=morphology.square(6))
+    edges = filters.sobel(img_binary[z, :, :])
     all_contours[z, :, :] = ndi.binary_fill_holes(edges)
     # contours = measure.find_contours(img_binary[z, :, :], level=0)
     # for contour in contours:
