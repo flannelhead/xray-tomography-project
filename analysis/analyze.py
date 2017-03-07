@@ -12,10 +12,8 @@ SAMPLE_DIR = 'samples'
 SLICE_DIR = 'slices'
 SLICE_PATTERN = '*.tif'
 
-CANNY_SIGMA = 1
-CANNY_LOW = 0
-CANNY_HIGH = 1
-EROSION_COUNT = 23
+EROSION_SIZE = 5
+EROSION_COUNT = 40
 
 
 def sobel_edges(img):
@@ -27,8 +25,9 @@ def fill_interior(img):
 
 
 def erode_to_infill(img):
-    return ndi.binary_erosion(img, structure=morphology.square(5),
+    return ndi.binary_erosion(img, structure=morphology.square(EROSION_SIZE),
                               iterations=EROSION_COUNT)
+
 
 def slice_by_slice(f, img, datatype=np.bool):
     nslices, _, _ = img.shape
@@ -65,7 +64,6 @@ def save_samples(prefix, img, color=False):
             io.imsave(filename, util.img_as_ubyte(img[slice, :, :, :]))
 
 
-
 def load_uint8(f, **kwargs):
     return util.img_as_ubyte(io.imread(f), force_copy=True)
 
@@ -75,17 +73,23 @@ slice_collection = io.ImageCollection(path.join(SLICE_DIR, SLICE_PATTERN),
 
 vol_img = slice_collection.concatenate()
 
-img_binary = otsu(vol_img)
-save_samples('binary_initial', red_overlay(vol_img, img_binary))
+img_otsu = otsu(vol_img)
+save_samples('otsu_mask_initial', red_overlay(vol_img, img_otsu))
+save_samples('otsu_initial', img_otsu)
 
-img_binary = slice_by_slice(sobel_edges, img_binary)
-save_samples('sobel', red_overlay(vol_img, img_binary))
+img_binary = slice_by_slice(sobel_edges, img_otsu)
+save_samples('sobel', img_binary)
+save_samples('sobel_overlay', red_overlay(vol_img, img_binary))
 
 img_binary = slice_by_slice(fill_interior, img_binary)
 save_samples('filled', red_overlay(vol_img, img_binary))
 
 img_binary = slice_by_slice(erode_to_infill, img_binary)
 save_samples('eroded', red_overlay(vol_img, img_binary))
+
+img_binary[28:84, :, :] = 0
+percentage = 100 * np.sum(img_otsu & img_binary) / np.sum(img_binary)
+print('Infill percentage: {0} %'.format(percentage))
 
 viewer = CollectionViewer(red_overlay(vol_img, img_binary))
 viewer.show()
