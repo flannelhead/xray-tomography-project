@@ -1,0 +1,238 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+        <title>reveal.js</title>
+
+        <link rel="stylesheet" href="css/reveal.css">
+        <link rel="stylesheet" href="css/theme/simple.css">
+
+        <!-- Theme used for syntax highlighting of code -->
+        <link rel="stylesheet" href="css/gruvbox-light.css">
+
+        <style>
+            .reveal img {
+                max-width: 600px;
+                max-height: 400px;
+            }
+
+            .MathJax_Display {
+                font-size: 0.75em !important;
+            }
+        </style>
+        <script>
+var link = document.createElement( 'link' );
+link.rel = 'stylesheet';
+link.type = 'text/css';
+link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+document.getElementsByTagName( 'head' )[0].appendChild( link );
+        </script>
+    </head>
+    <body>
+        <div class="reveal">
+            <div class="slides">
+<section data-markdown><script type="text/template">
+# FYSS430
+## Calculating the infill density of a 3D-printed model
+</script></section>
+<section>
+<section data-markdown><script type="text/template">
+## 3D printing
+
+* Additive manufacturing: plastic filament is extruded layer by layer
+* Produced objects are typically hollow, only partially filled with plastic
+* Material is saved, desired rigidity is preserved
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Example: honeycomb infill
+
+![An example picture of honeycomb infill](img/honeycomb-example.png)
+</script></section>
+</section>
+
+<section data-markdown><script type="text/template">
+## CT imaging
+
+* In this lab work, a 3D printed 20x20x20 mm "test cube" was imaged
+* Large object: SkyScan 1172 was used
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Data logistics
+
+* The stack of reconstructed slices totaled to > 6 GB
+* Author's laptop has only 4 GB of RAM &rarr; trouble!
+* Reduction in ImageJ:
+  - Crop excess borders
+  - Downscale XYZ by 2 &rarr; 8x reduction
+  - Reduce bit depth 16-bit &rarr; 8-bit
+* Destructive process, but sufficient resolution still preserved
+* Image stack is now a modest < 200 MB
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Image analysis & tool propaganda
+
+* Objective: calculate the volumetric density of the infill material
+* Tools: [Python](https://www.python.org/), libraries [scikit-image](http://scikit-image.org/) and [SciPy](http://www.scipy.org/)
+* Free, open source software
+* A general purpose programming language
+* Libraries facilitate N-dimensional image processing
+</script></section>
+
+<section>
+<section data-markdown><script type="text/template">
+## Finding the ROI
+
+* Separate the infill region from the perimeter
+* Generate a suitable mask
+
+![Labeled example image](img/honeycomb-example-labeled.png)
+</script></section>
+
+<section data-markdown><script type="text/template">
+### Edge detection
+
+* The 3D printed model is sliced along the Z-axis by its nature
+* Hence it makes sense to analyze the model slice-by-slice
+* Edges are detected with the Sobel operators:
+$$
+\mathbf{G_x} = \begin{bmatrix}
+1 & 0 & -1 \\\\
+2 & 0 & -2 \\\\
+1 & 0 & -1
+\end{bmatrix} \ast \mathbf{A},
+\mathbf{G_y} = \begin{bmatrix}
+1 & 2 & 1 \\\\
+0 & 0 & 0 \\\\
+-1 & -2 & -1
+\end{bmatrix} \ast \mathbf{A},\\\\
+\mathbf{G} = \sqrt{\mathbf{G_x}^2 + \mathbf{G_y}^2}
+$$
+
+```python
+def sobel_edges(img):
+    return filters.sobel(img)
+```
+</script></section>
+
+<section data-markdown><script type="text/template">
+### Global thresholding
+
+* To make the edge detector's job easier, let's give it a binary image
+* The data has clearly separated foreground and background &rarr; lends itself to Otsu's method
+
+```python
+def otsu(img):
+    return vol_img >= filters.threshold_otsu(img)
+```
+</script></section>
+
+<section data-markdown><script type="text/template">
+### Binary mask and edges by Sobel
+
+![Thresholded image](img/binary_initial_24.png)
+![Binary image produced by Sobel](img/sobel_24.png)
+</script></section>
+
+<section data-markdown><script type="text/template">
+### Infill mask
+
+* Fill the holes in the mask to cover the whole area and infill
+```python
+def fill_interior(img):
+    return ndi.binary_fill_holes(img)
+```
+* Erode the mask to cover only the infill
+* A 5-by-5 square erosion kernel, iterated 30 times
+* Offset can be varied by changing the iteration count
+```python
+def erode_to_infill(img):
+    return ndi.binary_erosion(
+        img, structure=morphology.square(EROSION_SIZE),
+        iterations=EROSION_COUNT
+    )
+```
+</script></section>
+
+<section data-markdown><script type="text/template">
+### Infill mask before and after erosion
+
+![Filled mask](img/filled_24.png)
+![Eroded mask](img/eroded_24.png)
+</script></section>
+</section>
+
+<section>
+<section data-markdown><script type="text/template">
+## Calculating the infill density
+
+* Approximation: $\text{volumetric density} \approx
+\frac{\text{# of foreground voxels}}{\text{# of all voxels}}
+$
+* Use the original Otsu thresholded image masked by the previously generated mask
+* Masking = logical AND (`&`)
+```python
+density = np.sum(img_otsu & infill_mask) / np.sum(infill_mask)
+```
+* Averaged over all the slices
+</script></section>
+
+<section data-markdown><script type="text/template">
+### Results
+
+* Varies between roughly 27-32 % depending on the offset of the infill mask
+* When generating the 3D model, infill ratio of 20 % was chosen (IIRC)
+</script></section>
+
+<section data-markdown><script type="text/template">
+### Explanation
+
+* There are some slices with regions of solid infill
+![Region of solid infill](img/otsu_initial_71.png)
+</script></section>
+
+<section data-markdown><script type="text/template">
+### Solution
+
+* Either neglect the slices with solid infill or detect and ignore the solid regions
+* Simple route: neglect the whole slices
+* More consistent results between 26-28 % &rarr; plausible
+* The infill ratio chosen in the slicer software might not be an exact number
+</script></section>
+</section>
+
+<section>
+    <h1>Thank you!</h1>
+    <h2>Questions?</h2>
+</section>
+            </div>
+        </div>
+
+        <script src="lib/js/head.min.js"></script>
+        <script src="js/reveal.js"></script>
+
+        <script>
+// More info https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+    history: true,
+
+    math: {
+        mathjax: 'https://cdn.mathjax.org/mathjax/latest/MathJax.js',
+        config: 'TeX-AMS_HTML-full'  // See http://docs.mathjax.org/en/latest/config-files.html
+    },
+
+    // More info https://github.com/hakimel/reveal.js#dependencies
+    dependencies: [
+        { src: 'plugin/markdown/marked.js' },
+        { src: 'plugin/markdown/markdown.js' },
+        { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+        { src: 'plugin/math/math.js', async: true }
+    ]
+});
+        </script>
+    </body>
+</html>
