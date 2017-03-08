@@ -1,0 +1,4 @@
+# erosion count; infill percentage
+30 27.54
+40 27.99
+50 25.88
