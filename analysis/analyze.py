@@ -14,7 +14,7 @@ SLICE_PATTERN = '*.tif'
 
 EDGE_THRESHOLD = 0.06
 EROSION_SIZE = 5
-EROSION_COUNT = 40
+EROSION_COUNT = 30
 
 
 def sobel_edges(img):
