@@ -17,9 +17,10 @@
 \usepackage{ftcap}
 \usepackage{lipsum}
 \usepackage{url}
-\usepackage{siunitx}
+\usepackage[binary-units]{siunitx}
 \usepackage{epstopdf}
 \usepackage{hyperref}
+\usepackage{subcaption}
 
 \begin{document}
 \onehalfspacing%  % Riviväli 1.5.
@@ -95,7 +96,7 @@ A more widely used, practical method is filtered backprojection. It is an integr
 
     \item The series of projections of a single slice at different rotation angles are considered as the Radon transform of the slice.
 
-    \item The Radon transform data is filtered in the Fourier plane by a filter $h(\omega) = |\omega|$. This step has a high pass filtering effect and arises from the mathematics of the Radon transform.
+    \item The Radon transform data is filtered in the Fourier plane by a ``ramp filter'' functio $h(\omega) = |\omega|$ where $\omega$ is the frequency. This step has a high pass filtering effect and arises from the mathematics of the Radon transform.
 
     \item The filtered data is transformed with the inverse Radon transform. The result of the inverse transform is an image of the corresponding $Z$-slice.
 
@@ -105,6 +106,7 @@ A more widely used, practical method is filtered backprojection. It is an integr
 Often, after the reconstruction process, the voxel values of the result are inverted such that larger values (brighter regions) correspond to volumes of greater density.
 
 \subsection{Binary images and thresholding}
+\label{sec:thresholding}
 The volume image recovered by the reconstruction process is a greyscale image. To analyze different sections of the image, some kind of \emph{segmentation} has to be performed. One of the simplest cases of segmentation is the extraction of a light foreground from a dark background. In a simple case, the result of such an operation is a binary image where the foreground pixels are marked white and background pixels are marked black.
 
 A binary mask like that can be achieved by thresholding: given a threshold value $t$, the thresholded image is given by
@@ -117,7 +119,7 @@ A binary mask like that can be achieved by thresholding: given a threshold value
 \end{equation}
 where $f(\mathbf{x})$ is the original image. The thresholded image $g_t(\mathbf{x})$ has only values 0 and 1 and is thus called a \emph{binary} image.
 
-The problem now boils down to finding the optimal threshold value which actually separates the foreground from the background. There are several automatic methods for obtaining such a threshold. One of them is the Otsu method~\cite{otsu}. I this method, the threshold is found as a solution to the optimization problem
+The problem now boils down to finding the optimal threshold value which actually separates the foreground from the background. There are several automatic methods for obtaining such a threshold. One of them is the Otsu method~\cite{otsu}. In this method, the threshold is found as a solution to the optimization problem
 \[
     \sigma_\text{B}^2(t_\text{Otsu}) = \max\limits_t \sigma_\text{B}^2(t),
 \]
@@ -146,7 +148,7 @@ One can derive edge detection kernels of arbitrary sizes and accuracies. The Sob
         1 & 2 & 1
     \end{bmatrix},
 \end{equation}
-which, while not greatly accurate, are an acceptable opinion if the desired result is achieved.
+which, while not greatly accurate, are an acceptable option if the desired result is achieved.
 
 Given the values of the $x$ and $y$ partial derivatives, the magnitude of the gradient can be calculated as
 \[
@@ -164,9 +166,137 @@ Opening is the chained operation of an erosion followed by a dilation. This remo
 These operations are widely implemented in popular image processing libraries and useful in manipulating binary images. For a more thorough explanation of them, see e.g. the OpenCV documentation~\cite{cv1, cv2}.
 
 \section{Experimental methods}
-\subsection{SkyScan 1172 CT scanner}
+The 3D printed sample was scanned with a Bruker SkyScan 1172 scanner~\cite{skyscan} and reconstructed with Bruker's NRecon software. The images were analyzed on a laptop computer.
+
+\subsection{SkyScan 1172 CT scanner settings}
+The sample was glued on a plastic rod which was mounted on a sample holder fixed on the rotational stage. The optimal settings were determined by inspecting preview images in the scanner control software. The X-ray voltage and current were chosen to yield sufficient dynamic range in the projection image while not overexposing it. No filter was used in the beam path. The most relevant settings and parameters are listed in table~\ref{table:settings}.
+
+\begin{table}
+    \centering
+    \caption{Parameters used in scanning}
+    \label{table:settings}
+    \begin{tabular}{lr}
+        \toprule
+        Parameter name & Value \\
+        \midrule
+        X-ray source voltage & \SI{100}{\kilo\volt} \\
+        X-ray source current & \SI{70}{\micro\ampere} \\
+        Image pixel size & \SI{17.01}{\micro\meter} \\
+        Angular step size & \SI{0.13}{\degree} \\
+        Frame averaging & on, 17 frames \\
+        Random movement & on, 20 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+A flat field was captured before scanning and used to remove the constant noise component from the frames. Frame averaging of 20 frames was used to reduce random noise in the images. In addition, the random movements feature was switched on in order to reduce ring artifacts.
+
+The scan was done in two passes, one of which covering the bottom part of the sample and the other covering the top part. The individual scans were automatically stitched together in the software.
+
+\subsection{Reconstruction software settings}
+Reconstruction was done in NRecon. Before the actual reconstruction, the reconstruction volume was roughly cropped based on the projection images to remove excess blank space.
+
+Beam hardening correction, smoothing and ring artifact correction settings were chosen manually by bracketing the respective settings values and evaluating their effect on the preview image. The settings are listed in table~\ref{table:nrecon_settings}
+\begin{table}
+    \centering
+    \caption{Parameters used in the NRecon reconstruction software}
+    \label{table:nrecon_settings}
+    \begin{tabular}{lr}
+        \toprule
+        Parameter name & Value \\
+        \midrule
+        Beam hardening correction & \SI{66}{\percent} \\
+        Smoothing & 2 \\
+        Smoothing kernel & Asymmetric boxcar \\
+        Ring artifact correction & 12 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
 
 \subsection{Image analysis software}
+The tools of choice for performing the image analysis was Python~\cite{python} equipped with the libraries~\cite{skimage} and~\cite{scipy}. These libraries provide a powerful software suite for analyzing N-dimensional images, including 3D image stacks resulting from CT scanning.
+
+The image analysis was performed on a laptop computer with $\SI{4}{\giga\byte}$ of RAM. This initially posed some problems: the whole image stack was over $\SI{6}{\giga\byte}$. Therefore the full image could not be loaded in RAM, which made the image analysis practically impossible.
+
+The problem was solved by discarding some information, for which the Fiji software suite~\cite{fiji} was used on a computer with sufficient RAM. An obvious first step was was to crop the image tighter than what was initially done -- there still was some blank space left in the cvolume image.
+
+Second, the image was downscaled by a factor of 2 on each of the $XYZ$ axes. Finally, it was anticipated that the full 16 bits of bit depth would not be required. Thus, the bit depth was changed to 8 bits per pixel. The operations resulted to a sub-\SI{200}{\mega\byte} size of the full stack, which was far better workable on a laptop with low RAM.
+
+\subsection{Segmentation}
+To analyze the infill density, it was essential to be able to isolate the volume actually filled with the infill pattern.
+
+In the 3D printed object, there is a vertical shell consisting of three extrudates. Therefore, the width of the outer shell remains relatively constant within and between slices. Hence, the following approach to processing the image was taken:
+\begin{enumerate}
+    \item Process the volume image slice-by-slice. This is a natural approach considering that the 3D printed object's features also appear on a slice-by-slice basis.
+    \item Find the outer perimeter of the object using an edge detection method.
+    \item If a consistent, continuous perimeter is found, mark it with white pixels.
+    \item Fill the interior of the perimeter by white pixels using a flood fill operation, creating a binary image.
+    \item \label{step:erosion} Offset the edge of the filled area inwards by a constant offset to reduce it so that it only covers to area filled with an infill pattern. This step ca be realized using a morphological erosion operation.
+\end{enumerate}
+Upon completion, one has acquired a binary mask covering the areas with infill pattern.
+
+In the edge detection step, a Sobel filter on the original grayscale image was initially used to find the magnitude of the image gradient. The grayscale image produced by Sobel was thresholded in order to mark the edge pixels as white.
+
+However, the choice of a suitable threshold proved to be difficult. Sometimes the resulting edge would not be continuous, causing the flood fill operation to fail. On some other slices with the same threshold, reconstruction artifacts were taken as a part of the outer edge. Examples of both cases are presented in figure~\ref{fig:failed_sobel}.
+\begin{figure}
+    \centering
+    \begin{subfigure}{0.5\textwidth}
+        \centering
+        \includegraphics[width=0.8\linewidth]{images/sobel_binary_208.png}
+    \end{subfigure}%
+    \begin{subfigure}{0.5\textwidth}
+        \centering
+        \includegraphics[width=0.8\linewidth]{images/sobel_binary_290.png}
+    \end{subfigure}
+    \caption{Two problematic cases of Sobel edge detection. On the left, a reconstruction artifact is treated as part of the outer perimeter. On the right, there is a discontinuity in the perimeter.}
+    \label{fig:failed_sobel}
+\end{figure}
+A possible cure for the misidentified edges would be to increase the edge threshold value to exclude these. On the other hand, the small discontinuities could be fixed by a morphological closing operation.
+
+Luckily, an even simpler method was found to perform very well in this case. In the images, there is a very consistent separation between the dark background and a foreground with close to uniform density. On such images, one can perform decent segmentation between background and foreground by generating a binary image. In particular, Otsu's automatic thresholding method performs very well on such occasions.
+
+This was the case in this application. The Otsu method was used globally on the image stack in one pass and the volume image was thresholded. Inspecting the slices, the separation between background and foreground was clear and consistent across slices. An example is presented in figure~\ref{fig:otsu}.
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/binary_initial_24.png}
+    \caption{An illustration of a binary mask generated using Otsu's method and thresholding. The foreground pixels (where the binary mask has value 1) are masked with red.}
+    \label{fig:otsu}
+\end{figure}
+From there on, the flood fill operation produces the desired result where a pixel is marked white if and only if it is inside the outer perimeter.
+
+The resulting mask was then shrinked as described in step~\ref{step:erosion}. A 5-by-5 square structuring element was found to give good results when the erosion operation was iterated several times. The more iterations are done, the more the mask is shrinked. An example is shown in figure~\ref{fig:eroded}.
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/eroded_24.png}
+    \caption{An illustration of one slice of the final mask used to isolate the infilled region.}
+    \label{fig:eroded}
+\end{figure}
+
+\subsection{Calculating the infill ratio}
+Now that the region of interest has been found, the calculation of the actual infill ratio is left. To perform this calculation, a separation between background and foreground pixels is required. The Otsu thresholded binary image previously generated should be sufficient for this purpose.
+
+A rigorous way of doing this calculation would be clipping ``sure'' background pixels to zero. Then the pixel values of the other pixels should be normalized according to the ``full density'' pixel value. Then the infill ratio would be achieved as
+\[
+    \text{infill ratio} = \frac{1}{N} \sum\limits_{\mathbf{x} \in \text{ROI}} f(\mathbf{x}),
+\]
+where $N$ is the number of voxels in the region where the infill density is evaluated (the set ROI) and $f(\mathbf{x})$ is the clipped and normalized image.
+
+The advantage of this method is that if done right, it should take edge effects in account (where a voxel is only partially filled with material). However, this method requires some heuristics to find out the full density value. One choice would be to take the average of the pixel values on the perimeter (or some portion of it). Due to the normalization, the method is somewhat sensitive to the choice of this value.
+
+A simpler method is to use the segmentation generated by Otsu thresholding. Then, an approximation of the infill ratio is
+\begin{equation}
+    \text{infill ratio} = \frac{1}{N} \sum\limits_{\mathbf{x} \in \text{ROI}} g(\mathbf{x}),
+\end{equation}
+where $g(\mathbf{x})$ is the thresholded image and $N$ the number of voxels in the ROI. In this method, the Otsu method is implicitly responsible of the choice of normalization. As discussed in section~\ref{sec:thresholding}, the threshold chosen by the Otsu method is optimal in a statistical sense. Therefore, it should not be an entirely poor choice as an approximation.
+
+\subsection{Pruning the slices}
+In initial tests, it became evident that there were some problematic slices. In particular, there was a range of slices where some of the infill pattern was solid in order to support the above structures. An example is seen in figure~\ref{fig:solid_infill}. Since only the sparsely infilled regions are desired to be measured, that range of slices was excluded from the data. Luckily the range covered only 56 of the total of 353 slices.
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/eroded_71.png}
+    \caption{An example of a slice that is partially filled with solid infill. The infill region mask is also shown.}
+    \label{fig:solid_infill}
+\end{figure}
 
 \section{Results}
 
@@ -176,18 +306,17 @@ These operations are widely implemented in popular image processing libraries an
 
 \begin{thebibliography}{9}
     \bibitem{testcube} XYZ 20mm Calibration Cube. User \emph{iDig3Dprinting}. \url{http://www.thingiverse.com/thing:1278865}. Referenced March 7, 2017.
-
     \bibitem{slic3r} Slic3r, G-code generator for 3D printers. \url{http://slic3r.org/}. Referenced March 7, 2017.
-
     \bibitem{lectures} FYSS430 X-ray tomography and image analysis, lecture notes. \emph{Arttu Miettinen}. University of Jyväskylä, 2017.
-
     \bibitem{radon} Applied Fourier Analysis and Elements of Modern Signal Processing, lecture notes. \emph{Emmanuel Candes}. Stanford University, 2016. \url{http://statweb.stanford.edu/~candes/math262/Lectures/Lecture09.pdf}. Referenced March 7, 2017.
-
     \bibitem{otsu} A Threshold Selection Method from Gray-Level Histograms. \emph{Nobuyuki Otsu}. IEEE Transactions on systems, man and cybernetics, vol. SMC-9, no. 1. January 1979.
-
     \bibitem{cv1} Eroding and Dilation. OpenCV 2.4.13 documentation. \url{http://docs.opencv.org/2.4/doc/tutorials/imgproc/erosion_dilatation/erosion_dilatation.html?highlight=morphology}. Referenced March 7, 2017.
-
     \bibitem{cv2} More Morphology Transformations. OpenCV 2.4.13 documentation. \url{http://docs.opencv.org/2.4/doc/tutorials/imgproc/opening_closing_hats/opening_closing_hats.html?highlight=morphology}. Referenced March 7, 2017.
+    \bibitem{skyscan} SkyScan1172 | Bruker microCT. \url{http://bruker-microct.com/products/1172.htm}. Referenced March 8, 2017.
+    \bibitem{python} Python. \url{https://www.python.org/}. Referenced March 8, 2017.
+    \bibitem{skimage} scikit-image. \url{http://scikit-image.org/}. Referenced March 8, 2017.
+    \bibitem{scipy} SciPy. \url{http://scipy.org/}. Referenced March 8, 2017.
+    \bibitem{fiji} Fiji is just ImageJ. \url{http://fiji.sc/}. Referenced March 8, 2017.
 \end{thebibliography}
 \end{document}
 
