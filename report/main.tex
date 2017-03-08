@@ -2,8 +2,6 @@
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
-%\usepackage[english=nohyphenation]{hyphsubst} % Tällä englannin tavutus pois.
-%\usepackage[sc]{mathpazo} % Vaihtoehtoinen Palatino-fontti käyttöön.
 \usepackage{enumerate}
 \usepackage[shortlabels]{enumitem}
 \usepackage{fullpage}
@@ -23,7 +21,7 @@
 \usepackage{subcaption}
 
 \begin{document}
-\onehalfspacing%  % Riviväli 1.5.
+\onehalfspacing%
 \thispagestyle{empty}
 \begin{flushleft}
  \underline{Sakari} Matias Kapanen\hfill
@@ -43,8 +41,8 @@ Supervisor: Arttu Miettinen\\
 \end{abstract}
 \clearpage%
 
-\setlength{\parindent}{0pt}  % Kappaleen alkuun ei sisennystä.
-\setlength{\parskip}{12pt}  % Sen sijaan kappaleiden väliin rako.
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{12pt}
 
 \setcounter{page}{1}
 
@@ -68,7 +66,7 @@ In this section, the theoretical foundations of computer tomographic imaging and
 In typical X-ray tomography scenarios, an X-ray beam is cast on the object to be imaged. On the other side there is a detector array. The object is mounted on a rotation stage. This allows taking X-ray projections of the object from different directions. From the two-dimensional projections, a volume image can be reconstructed.
 
 \subsection{Beer-Lambert law}
-The X-ray beams enterig the target object are attenuated in the material. The attenuation can be attributed to various scattering phenomena taking place in the medium, most importantly photoelectric effect and Compton scattering~\cite{lectures}. The probaility of these scatterings correlates to the density of the target material.
+The X-ray beams entering the target object are attenuated in the material. The attenuation can be attributed to various scattering phenomena taking place in the medium, most importantly photoelectric effect and Compton scattering~\cite{lectures}. The probability of these scatterings correlates to the density of the target material.
 
 Consider a beam propagating in one dimension. In a simple linear model, the rate of the scatterings is proportional to the attenuation coefficient $\mu(x)$ and the beam intensity $I(x)$. On the other hand, the scatterings decrease the intensity. Therefore the change of intensity with respect to traveled distance can be written as
 \begin{equation}
@@ -88,7 +86,7 @@ where $I_0$ is the initial beam intensity. In the special case of a uniform medi
 Therefore it is seen that the beam exponentially decays in the medium. The thickness and the density of the medium therefore both contribute to the attenuation.
 
 \subsection{Filtered backprojection}
-Given a sufficient number of $Z$-projections, one can costruct an image of the original volume. A simple method is to algebraically solve for the original voxel values using the projection data. However, this is inconvenient for any practical image sizes because the resulting equation group is large.
+Given a sufficient number of $Z$-projections, one can construct an image of the original volume. A simple method is to algebraically solve for the original voxel values using the projection data. However, this is inconvenient for any practical image sizes because the resulting equation group is large.
 
 A more widely used, practical method is filtered backprojection. It is an integral transform based approach which is described in detail in~\cite{radon}. The basic idea is as follows:
 \begin{enumerate}
@@ -96,7 +94,7 @@ A more widely used, practical method is filtered backprojection. It is an integr
 
     \item The series of projections of a single slice at different rotation angles are considered as the Radon transform of the slice.
 
-    \item The Radon transform data is filtered in the Fourier domain by a ``ramp filter'' functio $h(\omega) = |\omega|$ where $\omega$ is the frequency. This step has a high pass filtering effect and arises from the mathematics of the Radon transform.
+    \item The Radon transform data is filtered in the Fourier domain by a ``ramp filter'' function $h(\omega) = |\omega|$ where $\omega$ is the frequency. This step has a high pass filtering effect and arises from the mathematics of the Radon transform.
 
     \item The filtered data is transformed with the inverse Radon transform. The result of the inverse transform is an image of the corresponding $Z$-slice.
 
@@ -126,7 +124,7 @@ The problem now boils down to finding the optimal threshold value which actually
 where $\sigma_\text{B}^2(t)$ is the between-class variance of the background and foreground pixel (or voxel) values of the respective pixel classes separated by the threshold $t$. This method works well if there are clear foreground and background peaks in the image histogram.
 
 \subsection{Edge detection}
-Another commonly useful image processing operation is edge detection. The notion of an edge usually corresponds to a discontiuity or a rapid change in the image. Therefore partial derivatives of the image are a natural way of finding derivatives.
+Another commonly useful image processing operation is edge detection. The notion of an edge usually corresponds to a discontinuity or a rapid change in the image. Therefore partial derivatives of the image are a natural way of finding the edges.
 
 However, derivatives are also sensitive to noise in the image. Some low pass filtering of the image is usually performed to reduce noise. A useful property of convolution allows combining the derivative and the convolution operations:
 \begin{equation}
@@ -157,7 +155,7 @@ Given the values of the $x$ and $y$ partial derivatives, the magnitude of the gr
 High values of the gradient magnitude signify the image edges.
 
 \subsection{Morphological operations}
-Morphological operations are a set of mathematical operations on binary images. The basic operations are \emph{erosion}, \emph{dilation}, \emph{opening} and \emph{closing}. All these operations involve the usage of a \emph{structuring element} which is a $n$-by-$m$ binary mask which determines the neighbourhood that is sampled for each pixel during the operation.
+Morphological operations are a set of mathematical operations on binary images. The basic operations are \emph{erosion}, \emph{dilation}, \emph{opening} and \emph{closing}. All these operations involve the usage of a \emph{structuring element} which is a $n$-by-$m$ binary mask which determines the neighborhood that is sampled for each pixel during the operation.
 
 Erosion and dilation are complementary: erosion shrinks white regions in the source image, dilation expands them (or shrinks black regions).
 
@@ -247,11 +245,11 @@ In the 3D printed object, there is a vertical shell consisting of three extrudat
     \item Find the outer perimeter of the object using an edge detection method.
     \item If a consistent, continuous perimeter is found, mark it with white pixels.
     \item Fill the interior of the perimeter by white pixels using a flood fill operation, creating a binary image.
-    \item \label{step:erosion} Offset the edge of the filled area inwards by a constant offset to reduce it so that it only covers to area filled with an infill pattern. This step ca be realized using a morphological erosion operation.
+    \item \label{step:erosion} Offset the edge of the filled area inwards by a constant offset to reduce it so that it only covers to area filled with an infill pattern. This step can be realized using a morphological erosion operation.
 \end{enumerate}
 Upon completion, one has acquired a binary mask covering the areas with infill pattern.
 
-In the edge detection step, a Sobel filter on the original grayscale image was initially used to find the magnitude of the image gradient. The grayscale image produced by Sobel was thresholded in order to mark the edge pixels as white.
+In the edge detection step, a Sobel filter on the original greyscale image was initially used to find the magnitude of the image gradient. The greyscale image produced by Sobel was thresholded in order to mark the edge pixels as white.
 
 However, the choice of a suitable threshold proved to be difficult. Sometimes the resulting edge would not be continuous, causing the flood fill operation to fail. On some other slices with the same threshold, reconstruction artifacts were taken as a part of the outer edge. Examples of both cases are presented in figure~\ref{fig:failed_sobel}.
 \begin{figure}
