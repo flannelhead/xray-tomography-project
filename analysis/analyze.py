@@ -6,12 +6,13 @@ from scipy import ndimage as ndi
 from skimage import color, io, util, filters, transform, morphology, measure, segmentation, draw, feature
 from skimage.viewer import CollectionViewer, ImageViewer
 
-SAMPLE_SLICES = [24, 71]
+SAMPLE_SLICES = [24, 71, 208, 290]
 SAMPLE_DIR = 'samples'
 
 SLICE_DIR = 'slices'
 SLICE_PATTERN = '*.tif'
 
+EDGE_THRESHOLD = 0.06
 EROSION_SIZE = 5
 EROSION_COUNT = 40
 
@@ -77,11 +78,13 @@ img_otsu = otsu(vol_img)
 save_samples('otsu_mask_initial', red_overlay(vol_img, img_otsu))
 save_samples('otsu_initial', img_otsu)
 
-img_binary = slice_by_slice(sobel_edges, img_otsu)
-save_samples('sobel', img_binary)
-save_samples('sobel_overlay', red_overlay(vol_img, img_binary))
+# img_sobel = slice_by_slice(sobel_edges, vol_img, datatype=np.float)
+# img_binary = img_sobel > EDGE_THRESHOLD
+# save_samples('sobel', img_sobel)
+# save_samples('sobel_binary', img_binary)
+# save_samples('sobel_overlay', red_overlay(vol_img, img_binary))
 
-img_binary = slice_by_slice(fill_interior, img_binary)
+img_binary = slice_by_slice(fill_interior, img_otsu)
 save_samples('filled', red_overlay(vol_img, img_binary))
 
 img_binary = slice_by_slice(erode_to_infill, img_binary)
