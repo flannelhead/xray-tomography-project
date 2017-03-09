@@ -55,13 +55,13 @@ The volumetric ratio of the infill material inside the cube was chosen as the re
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.8\textwidth]{images/cube_slic3r.png}
+    \includegraphics[width=0.6\textwidth]{images/cube_slic3r.png}
     \caption{A section of a three-dimensional cube model~\cite{testcube} sliced by Slic3r~\cite{slic3r}. A honeycomb infill pattern of 20 \% ratio has been generated inside.}
     \label{fig:honeycomb}
 \end{figure}
 
 \section{Theoretical background}
-In this section, the theoretical foundations of computer tomographic imaging and image reconstruction are lightly covered. There is also a brief introduction to the image processing methods used.
+In this section, the theoretical foundations of computer tomographic imaging and image reconstruction are cursorily covered. There is also a brief introduction to the image processing methods used.
 
 In typical X-ray tomography scenarios, an X-ray beam is cast on the object to be imaged. On the other side there is a detector array. The object is mounted on a rotation stage. This allows taking X-ray projections of the object from different directions. From the two-dimensional projections, a volume image can be reconstructed.
 
@@ -189,9 +189,13 @@ The sample was glued on a plastic rod which was mounted on a sample holder fixed
 
 A flat field was captured before scanning and used to remove the constant noise component from the frames. Frame averaging of 20 frames was used to reduce random noise in the images. In addition, the random movements feature was switched on in order to reduce ring artifacts.
 
-The scan was done in two passes, one of which covering the bottom part of the sample and the other covering the top part. The individual scans were automatically stitched together in the software.
-
-TODO add an example projection image
+The scan was done in two passes, one of which covering the bottom part of the sample and the other covering the top part. The combining of these parts will be performed in the reconstruction phase. As an example of a projection, a manually stitched image is shown in figure~\ref{fig:projection}.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.6\textwidth]{images/projection.png}
+    \caption{An example of a projection image acquired from the X-ray scanning process. This image has been manually stitched together from individual scans of the top and bottom parts and is thus only illustrative.}
+    \label{fig:projection}
+\end{figure}
 
 \subsection{Reconstruction}
 Reconstruction was done in NRecon. Before the actual reconstruction, the reconstruction volume was roughly cropped based on the projection images to remove excess blank space.
@@ -214,15 +218,15 @@ Beam hardening correction, smoothing and ring artifact correction settings were 
 \end{table}
 
 An example of a reconstructed slice is shown in figure~\ref{fig:slice}. A three-dimensional visualization of the volume image is shown in~\ref{fig:volume_viewer}.
-\begin{figure}
+\begin{figure}[h]
     \centering
-    \includegraphics[width=0.8\textwidth]{images/slice_example.png}
+    \includegraphics[width=0.6\textwidth]{images/slice_example.png}
     \caption{An example of a reconstructed slice of the volume image.}
     \label{fig:slice}
 \end{figure}
 \begin{figure}
     \centering
-    \includegraphics[width=0.8\textwidth]{images/volume_viewer.png}
+    \includegraphics[width=0.6\textwidth]{images/volume_viewer.png}
     \caption{A 3D visualization reconstructed from the slices by Fiji Volume Viewer.}
     \label{fig:volume_viewer}
 \end{figure}
@@ -272,7 +276,7 @@ Luckily, an even simpler method was found to perform very well in this case. In 
 This was the case in this application. The Otsu method was used globally on the image stack in one pass and the volume image was thresholded. Inspecting the slices, the separation between background and foreground was clear and consistent across slices. An example is presented in figure~\ref{fig:otsu}.
 \begin{figure}
     \centering
-    \includegraphics[width=0.8\textwidth]{images/binary_initial_24.png}
+    \includegraphics[width=0.6\textwidth]{images/binary_initial_24.png}
     \caption{An illustration of a binary mask generated using Otsu's method and thresholding. The foreground pixels (where the binary mask has value 1) are masked with red.}
     \label{fig:otsu}
 \end{figure}
@@ -281,7 +285,7 @@ From there on, the flood fill operation produces the desired result where a pixe
 The resulting mask was then shrinked as described in step~\ref{step:erosion}. A 5-by-5 square structuring element was found to give good results when the erosion operation was iterated several times. The more iterations are done, the more the mask is shrinked. An example is shown in figure~\ref{fig:eroded}.
 \begin{figure}
     \centering
-    \includegraphics[width=0.8\textwidth]{images/eroded_24.png}
+    \includegraphics[width=0.6\textwidth]{images/eroded_24.png}
     \caption{An illustration of one slice of the final mask used to isolate the infilled region.}
     \label{fig:eroded}
 \end{figure}
@@ -308,7 +312,7 @@ where $g(\mathbf{x})$ is the thresholded image and $N$ the number of voxels in t
 In initial tests, it became evident that there were some problematic slices. In particular, there was a range of slices where some of the infill pattern was solid in order to support the above structures. An example is seen in figure~\ref{fig:solid_infill}. Since only the sparsely infilled regions are desired to be measured, that range of slices was excluded from the calculation. Luckily the range covered only 56 of the total of 353 slices.
 \begin{figure}
     \centering
-    \includegraphics[width=0.8\textwidth]{images/eroded_71.png}
+    \includegraphics[width=0.6\textwidth]{images/eroded_71.png}
     \caption{An example of a slice that is partially filled with solid infill. The infill region mask is also shown.}
     \label{fig:solid_infill}
 \end{figure}
@@ -368,11 +372,11 @@ It was also seen that through clever use of thresholding and morphological opera
     \bibitem{cv1} Eroding and Dilation. OpenCV 2.4.13 documentation. \url{http://docs.opencv.org/2.4/doc/tutorials/imgproc/erosion_dilatation/erosion_dilatation.html?highlight=morphology}. Referenced March 7, 2017.
     \bibitem{cv2} More Morphology Transformations. OpenCV 2.4.13 documentation. \url{http://docs.opencv.org/2.4/doc/tutorials/imgproc/opening_closing_hats/opening_closing_hats.html?highlight=morphology}. Referenced March 7, 2017.
     \bibitem{skyscan} SkyScan1172 | Bruker microCT. \url{http://bruker-microct.com/products/1172.htm}. Referenced March 8, 2017.
+    \bibitem{code} Analysis source code. \url{https://github.com/flannelhead/xray-tomography-project/blob/master/analysis/analyze.py}. Referenced March 8, 2017.
     \bibitem{python} Python. \url{https://www.python.org/}. Referenced March 8, 2017.
     \bibitem{skimage} scikit-image. \url{http://scikit-image.org/}. Referenced March 8, 2017.
     \bibitem{scipy} SciPy. \url{http://scipy.org/}. Referenced March 8, 2017.
     \bibitem{fiji} Fiji is just ImageJ. \url{http://fiji.sc/}. Referenced March 8, 2017.
-    \bibitem{code} Analysis source code. \url{https://github.com/flannelhead/xray-tomography-project/blob/master/analysis/analyze.py}. Referenced March 8, 2017.
 \end{thebibliography}
 \end{document}
 
